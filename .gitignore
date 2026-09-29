@@ -1,0 +1,30 @@
+# Build Artifacts
+build/
+bin/
+*.o
+*.so
+*.a
+sentinel_os
+sentinel_prototype
+client_app
+
+# Logs & Temporary Files
+logs/*.log
+*.log
+*.tmp
+
+# Kernel Module Build Files
+driver/*.o
+driver/*.ko
+driver/*.mod
+driver/*.mod.c
+driver/*.order
+driver/*.symvers
+driver/.sentinel*
+driver/.tmp_versions/
+
+# IDE & OS Artifacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
