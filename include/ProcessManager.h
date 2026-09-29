@@ -3,24 +3,57 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
-struct ProcessDetails {
-    int pid{0};
-    std::string name;
-    char state{'R'};
-    int ppid{0};
-    uint64_t memory_kb{0};
+// Struct representing detailed metadata for a single Linux process
+struct ProcessInfo {
+    int pid{0};              // Process ID
+    int ppid{0};             // Parent Process ID
+    std::string name;        // Binary / Executable Name
+    char state{'U'};         // Process State: 'R' (Running), 'S' (Sleeping), 'Z' (Zombie), 'D' (Disk Sleep), 'T' (Stopped)
+    uint64_t memory_kb{0};   // Resident Set Size RAM Memory Usage in Kilobytes (kB)
 };
 
+// Struct aggregating process state counts across the system
+struct ProcessStatsSummary {
+    int total_processes{0};
+    int running_count{0};
+    int sleeping_count{0};
+    int zombie_count{0};
+    int stopped_count{0};
+    int other_count{0};
+};
+
+/**
+ * @class ProcessManager
+ * @brief Discovers, monitors, searches, and statistics-aggregates Linux processes using /proc.
+ */
 class ProcessManager {
+private:
+    // Helper function to scan numerical PID subdirectories in /proc
+    std::vector<int> scan_proc_pids();
+
 public:
     ProcessManager() = default;
     ~ProcessManager() = default;
 
-    std::vector<int> get_all_pids();
-    ProcessDetails get_process_details(int pid);
-    std::vector<ProcessDetails> get_running_processes_list();
-    bool send_signal_to_process(int pid, int signal_number);
+    // Discovers and parses details for all active processes
+    std::vector<ProcessInfo> get_all_processes();
+
+    // Retrieves metadata for a specific PID
+    ProcessInfo get_process_by_pid(int pid);
+
+    // Searches for processes matching a string name query
+    std::vector<ProcessInfo> search_processes_by_name(const std::string& name_query);
+
+    // Calculates process state statistics summary (Running, Sleeping, Zombie counts)
+    ProcessStatsSummary get_process_stats_summary();
+
+    // Renders formatted top process list to console
+    void display_top_processes(int limit = 10);
+
+    // Displays aggregate process state summary statistics
+    void display_process_summary();
 };
 
 #endif // PROCESS_MANAGER_H

@@ -4,23 +4,37 @@
 #include <iomanip>
 #include "ResourceMonitor.h"
 #include "KernelMonitor.h"
+#include "ProcessManager.h"
 
 int main() {
     std::cout << "==========================================================" << std::endl;
-    std::cout << "  SentinelOS: Milestone 3 - Kernel & System Info Monitor  " << std::endl;
+    std::cout << "  SentinelOS: Milestone 4 - Process Monitoring Module     " << std::endl;
     std::cout << "==========================================================" << std::endl;
 
-    // Instantiate Milestone 3 KernelMonitor
+    // 1. Milestone 3: Kernel Summary
     KernelMonitor kernel_monitor;
     kernel_monitor.display_kernel_summary();
 
-    // Instantiate Milestone 2 ResourceMonitor
-    ResourceMonitor resource_monitor;
+    // 2. Milestone 4: Process Monitoring Summary & Top Processes
+    ProcessManager process_manager;
+    process_manager.display_process_summary();
+    process_manager.display_top_processes(8);
 
+    // 3. Process Search Demo
+    std::cout << "\n[Process Search Demo] Searching for 'systemd' / 'init' processes:" << std::endl;
+    std::vector<ProcessInfo> search_results = process_manager.search_processes_by_name("systemd");
+    if (search_results.empty()) {
+        search_results = process_manager.search_processes_by_name("init");
+    }
+    for (const auto& proc : search_results) {
+        std::cout << "  Found PID: " << proc.pid << " | Name: " << proc.name << " | State: " << proc.state << std::endl;
+    }
+
+    // 4. Milestone 2: Real-time Resource Sampling Ticks
+    ResourceMonitor resource_monitor;
     std::cout << "\n[Info] Starting real-time system resource sampling..." << std::endl;
     std::cout << "----------------------------------------------------------" << std::endl;
 
-    // Execute 3 sampling iterations at 1-second intervals
     for (int sample = 1; sample <= 3; ++sample) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
@@ -36,7 +50,7 @@ int main() {
     }
 
     std::cout << "----------------------------------------------------------" << std::endl;
-    std::cout << "[Success] Milestone 3 Integrated Test Completed Successfully." << std::endl;
+    std::cout << "[Success] Milestone 4 Process Monitoring Integrated Test Completed." << std::endl;
     std::cout << "==========================================================" << std::endl;
 
     return 0;
