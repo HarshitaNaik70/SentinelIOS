@@ -54,6 +54,15 @@ public:
 
     // Displays aggregate process state summary statistics
     void display_process_summary();
+
+    // Checks if a process with given PID is currently active
+    bool is_process_running(int pid);
+
+    // Checks if a process with given PID is in Zombie state ('Z')
+    bool is_zombie(int pid);
+
+    // Sends a POSIX signal to terminate a process (default SIGTERM = 15, SIGKILL = 9)
+    bool terminate_process(int pid, int signal_num = 15);
 };
 
 #endif // PROCESS_MANAGER_H

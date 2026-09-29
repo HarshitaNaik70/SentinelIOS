@@ -141,16 +141,16 @@ std::string Server::process_command(const std::string& raw_command) {
     std::lock_guard<std::mutex> lock(m_monitor_mutex);
 
     if (cmd == "GET_CPU") {
-        double cpu = m_resource_monitor.calculate_cpu_usage();
+        double cpu = m_resource_monitor.get_cpu_usage_percent();
         ss << "CPU_USAGE: " << std::fixed << std::setprecision(2) << cpu << "%\n";
     } else if (cmd == "GET_MEMORY") {
-        MemoryStats mem = m_resource_monitor.get_memory_stats();
+        MemoryInfo mem = m_resource_monitor.get_memory_info();
         ss << "RAM_TOTAL_MB: " << mem.total_ram_mb << "\n"
            << "RAM_USED_MB: " << mem.used_ram_mb << "\n"
-           << "RAM_AVAIL_MB: " << mem.available_ram_mb << "\n"
+           << "RAM_FREE_MB: " << mem.free_ram_mb << "\n"
            << "RAM_USAGE_PERCENT: " << mem.ram_usage_percent << "%\n";
     } else if (cmd == "GET_DISK") {
-        DiskStats disk = m_resource_monitor.get_disk_stats("/");
+        DiskInfo disk = m_resource_monitor.get_disk_info("/");
         ss << "DISK_TOTAL_GB: " << disk.total_disk_gb << "\n"
            << "DISK_USED_GB: " << disk.used_disk_gb << "\n"
            << "DISK_FREE_GB: " << disk.free_disk_gb << "\n"
@@ -174,8 +174,8 @@ std::string Server::process_command(const std::string& raw_command) {
            << "ZOMBIE: " << stats.zombie_count << "\n"
            << "STOPPED: " << stats.stopped_count << "\n";
     } else if (cmd == "GET_SYSTEM_STATUS") {
-        double cpu = m_resource_monitor.calculate_cpu_usage();
-        MemoryStats mem = m_resource_monitor.get_memory_stats();
+        double cpu = m_resource_monitor.get_cpu_usage_percent();
+        MemoryInfo mem = m_resource_monitor.get_memory_info();
         ProcessStatsSummary stats = m_process_manager.get_process_stats_summary();
 
         ss << "STATUS: OK\n"

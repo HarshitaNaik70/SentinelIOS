@@ -3,7 +3,7 @@
 
 #include <string>
 #include <fstream>
-#include <mutex>
+#include "ThreadCompat.h"
 
 // Log Severity Levels
 enum class LogLevel {

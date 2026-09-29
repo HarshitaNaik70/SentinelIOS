@@ -5,8 +5,10 @@ bin/
 *.so
 *.a
 sentinel_os
+sentinel_client
 sentinel_prototype
 client_app
+*.exe
 
 # Logs & Temporary Files
 logs/*.log

@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude -Iclient
 
-SERVER_SRC = src/Server.cpp src/Logger.cpp src/AlertManager.cpp src/ProcessManager.cpp src/KernelMonitor.cpp src/ResourceMonitor.cpp src/main.cpp
+SERVER_SRC = src/Server.cpp src/Logger.cpp src/AlertManager.cpp src/ProcessManager.cpp src/KernelMonitor.cpp src/ResourceMonitor.cpp src/RecoveryManager.cpp src/main.cpp
 SERVER_OBJ = $(SERVER_SRC:.cpp=.o)
 SERVER_TARGET = sentinel_os
 

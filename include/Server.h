@@ -3,8 +3,7 @@
 
 #include <string>
 #include <atomic>
-#include <thread>
-#include <mutex>
+#include "ThreadCompat.h"
 #include "ResourceMonitor.h"
 #include "KernelMonitor.h"
 #include "ProcessManager.h"

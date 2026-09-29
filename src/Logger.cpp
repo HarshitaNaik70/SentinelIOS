@@ -4,15 +4,20 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
-#include <filesystem>
+#include <sys/stat.h>
 
-namespace fs = std::filesystem;
+#if defined(_WIN32)
+#include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#else
+#define MKDIR(path) mkdir(path, 0755)
+#endif
 
 // Private Constructor
 Logger::Logger() : m_log_file_path("logs/sentinel.log") {
-    // Ensure logs/ directory exists
-    if (!fs::exists("logs")) {
-        fs::create_directory("logs");
+    struct stat st;
+    if (stat("logs", &st) != 0) {
+        MKDIR("logs");
     }
 
     m_log_file.open(m_log_file_path, std::ios::app);
@@ -28,41 +33,34 @@ Logger::~Logger() {
     }
 }
 
-// Static Accessor to Singleton Instance
+// Singleton Instance Accessor
 Logger& Logger::getInstance() {
     static Logger instance;
     return instance;
 }
 
-// Configure custom log file path
-void Logger::set_log_file(const std::string& filepath) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_log_file.is_open()) {
-        m_log_file.close();
-    }
-    m_log_file_path = filepath;
-    m_log_file.open(m_log_file_path, std::ios::app);
-}
-
-// Converts enum LogLevel to String representation
+// Converts LogLevel enum to string representation
 std::string Logger::level_to_string(LogLevel level) {
     switch (level) {
         case LogLevel::INFO:     return "INFO";
-        case LogLevel::WARNING:  return "WARN";
+        case LogLevel::WARNING:  return "WARNING";
         case LogLevel::ERROR:    return "ERROR";
-        case LogLevel::CRITICAL: return "CRIT";
-        default:                 return "INFO";
+        case LogLevel::CRITICAL: return "CRITICAL";
+        default:                 return "UNKNOWN";
     }
 }
 
-// Formats current system timestamp
+// Generates current wall-clock timestamp string
 std::string Logger::get_current_timestamp() {
     auto now = std::chrono::system_clock::now();
     auto time_t_now = std::chrono::system_clock::to_time_t(now);
     std::tm tm_now{};
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_MSC_VER)
     localtime_s(&tm_now, &time_t_now);
+#elif defined(_WIN32)
+    std::tm* tm_ptr = std::localtime(&time_t_now);
+    if (tm_ptr) tm_now = *tm_ptr;
 #else
     localtime_r(&time_t_now, &tm_now);
 #endif
@@ -72,24 +70,36 @@ std::string Logger::get_current_timestamp() {
     return ss.str();
 }
 
-// Thread-Safe Logging Implementation
+// Sets custom target log file path
+void Logger::set_log_file(const std::string& filepath) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_log_file.is_open()) {
+        m_log_file.close();
+    }
+    m_log_file_path = filepath;
+    m_log_file.open(m_log_file_path, std::ios::app);
+}
+
+// Core Log Implementation
 void Logger::log(LogLevel level, const std::string& module, const std::string& message) {
     std::lock_guard<std::mutex> lock(m_mutex);
-
     std::string timestamp = get_current_timestamp();
     std::string level_str = level_to_string(level);
 
-    std::string formatted_msg = "[" + timestamp + "] [" + level_str + "] [" + module + "] " + message;
+    // Formatted Log Record: [TIMESTAMP] [LEVEL] [MODULE] - Message
+    std::string log_entry = "[" + timestamp + "] [" + level_str + "] [" + module + "] - " + message;
 
-    // Print to Standard Console Output
-    std::cout << formatted_msg << std::endl;
+    // 1. Output to Console
+    std::cout << log_entry << std::endl;
 
-    // Append to Log File
+    // 2. Output to persistent log file
     if (m_log_file.is_open()) {
-        m_log_file << formatted_msg << std::endl;
+        m_log_file << log_entry << std::endl;
+        m_log_file.flush();
     }
 }
 
+// Helper methods for log severity levels
 void Logger::info(const std::string& module, const std::string& message) {
     log(LogLevel::INFO, module, message);
 }

@@ -2,29 +2,37 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <filesystem>
 #include <algorithm>
 #include <iomanip>
 
-namespace fs = std::filesystem;
+#if defined(__linux__)
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 // 1. Scans /proc directory for numerical subdirectories representing active PIDs
 std::vector<int> ProcessManager::scan_proc_pids() {
     std::vector<int> pids;
-    if (!fs::exists("/proc")) {
+#if defined(__linux__)
+    DIR* dir = opendir("/proc");
+    if (!dir) {
         return pids;
     }
 
-    for (const auto& entry : fs::directory_iterator("/proc")) {
-        if (entry.is_directory()) {
-            std::string filename = entry.path().filename().string();
-            // Check if directory name is entirely numeric
-            if (std::all_of(filename.begin(), filename.end(), ::isdigit)) {
-                pids.push_back(std::stoi(filename));
-            }
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        std::string filename(entry->d_name);
+        // Check if directory name is entirely numeric
+        if (std::all_of(filename.begin(), filename.end(), ::isdigit)) {
+            pids.push_back(std::stoi(filename));
         }
     }
+    closedir(dir);
     std::sort(pids.begin(), pids.end());
+#endif
     return pids;
 }
 
@@ -160,4 +168,33 @@ void ProcessManager::display_process_summary() {
               << " | Zombie (Z): " << summary.zombie_count
               << " | Stopped (T): " << summary.stopped_count
               << std::endl;
+}
+
+// 8. Checks if process PID is currently active
+bool ProcessManager::is_process_running(int pid) {
+    if (pid <= 0) return false;
+#if defined(__linux__)
+    // kill(pid, 0) checks process existence without delivering a signal
+    return (kill(pid, 0) == 0);
+#else
+    return false;
+#endif
+}
+
+// 9. Checks if process is in Zombie state ('Z')
+bool ProcessManager::is_zombie(int pid) {
+    if (pid <= 0) return false;
+    ProcessInfo info = get_process_by_pid(pid);
+    return (info.state == 'Z');
+}
+
+// 10. Sends POSIX signal to target PID
+bool ProcessManager::terminate_process(int pid, int signal_num) {
+    if (pid <= 0) return false;
+#if defined(__linux__)
+    return (kill(pid, signal_num) == 0);
+#else
+    (void)signal_num;
+    return false;
+#endif
 }
