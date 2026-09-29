@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude
-SRC = src/ResourceMonitor.cpp src/main.cpp
+SRC = src/KernelMonitor.cpp src/ResourceMonitor.cpp src/main.cpp
 OBJ = $(SRC:.cpp=.o)
 TARGET = sentinel_os
 

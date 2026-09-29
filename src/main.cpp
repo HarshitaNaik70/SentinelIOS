@@ -3,33 +3,31 @@
 #include <chrono>
 #include <iomanip>
 #include "ResourceMonitor.h"
+#include "KernelMonitor.h"
 
 int main() {
     std::cout << "==========================================================" << std::endl;
-    std::cout << "  SentinelOS: Milestone 2 - Resource Monitoring Module    " << std::endl;
+    std::cout << "  SentinelOS: Milestone 3 - Kernel & System Info Monitor  " << std::endl;
     std::cout << "==========================================================" << std::endl;
 
-    // Instantiate ResourceMonitor object
-    ResourceMonitor monitor;
+    // Instantiate Milestone 3 KernelMonitor
+    KernelMonitor kernel_monitor;
+    kernel_monitor.display_kernel_summary();
 
-    std::cout << "[Info] Starting real-time system resource sampling..." << std::endl;
+    // Instantiate Milestone 2 ResourceMonitor
+    ResourceMonitor resource_monitor;
+
+    std::cout << "\n[Info] Starting real-time system resource sampling..." << std::endl;
     std::cout << "----------------------------------------------------------" << std::endl;
 
-    // Execute 5 sampling iterations at 1-second intervals
-    for (int sample = 1; sample <= 5; ++sample) {
-        // Sleep for 1000 milliseconds to allow CPU tick delta accumulation
+    // Execute 3 sampling iterations at 1-second intervals
+    for (int sample = 1; sample <= 3; ++sample) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-        // Retrieve CPU usage percentage
-        double cpu_usage = monitor.get_cpu_usage_percent();
+        double cpu_usage = resource_monitor.get_cpu_usage_percent();
+        MemoryInfo mem = resource_monitor.get_memory_info();
+        DiskInfo disk = resource_monitor.get_disk_info("/");
 
-        // Retrieve Memory information
-        MemoryInfo mem = monitor.get_memory_info();
-
-        // Retrieve Disk information for root "/" mount point
-        DiskInfo disk = monitor.get_disk_info("/");
-
-        // Display results cleanly
         std::cout << "Sample #" << sample << " | "
                   << "CPU: " << std::fixed << std::setprecision(2) << cpu_usage << "% | "
                   << "RAM: " << std::setprecision(1) << mem.used_ram_mb << " MB / " << mem.total_ram_mb << " MB (" << mem.ram_usage_percent << "%) | "
@@ -38,7 +36,7 @@ int main() {
     }
 
     std::cout << "----------------------------------------------------------" << std::endl;
-    std::cout << "[Success] Milestone 2 Resource Monitoring Test Completed." << std::endl;
+    std::cout << "[Success] Milestone 3 Integrated Test Completed Successfully." << std::endl;
     std::cout << "==========================================================" << std::endl;
 
     return 0;
