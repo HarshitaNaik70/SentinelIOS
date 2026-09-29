@@ -1,109 +1,58 @@
-#ifndef SENTINEL_RESOURCE_MONITOR_H
-#define SENTINEL_RESOURCE_MONITOR_H
+#ifndef RESOURCE_MONITOR_H
+#define RESOURCE_MONITOR_H
 
 #include <string>
-#include <vector>
 #include <cstdint>
-#include <mutex>
-#include "Common.h"
 
-namespace Sentinel {
+// Struct to store CPU tick counters read from /proc/stat
+struct CpuTicks {
+    uint64_t idle_ticks{0};
+    uint64_t total_ticks{0};
+};
 
-    /**
-     * @struct CpuTicks
-     * @brief Raw CPU tick counters read from /proc/stat
-     */
-    struct CpuTicks {
-        uint64_t user{0};
-        uint64_t nice{0};
-        uint64_t system{0};
-        uint64_t idle{0};
-        uint64_t iowait{0};
-        uint64_t irq{0};
-        uint64_t softirq{0};
-        uint64_t steal{0};
+// Struct to hold calculated Memory metrics
+struct MemoryInfo {
+    double total_ram_mb{0.0};
+    double free_ram_mb{0.0};
+    double used_ram_mb{0.0};
+    double ram_usage_percent{0.0};
+};
 
-        uint64_t get_idle_ticks() const { return idle + iowait; }
-        uint64_t get_total_ticks() const {
-            return user + nice + system + idle + iowait + irq + softirq + steal;
-        }
-    };
+// Struct to hold calculated Disk storage metrics
+struct DiskInfo {
+    double total_disk_gb{0.0};
+    double free_disk_gb{0.0};
+    double used_disk_gb{0.0};
+    double disk_usage_percent{0.0};
+};
 
-    /**
-     * @struct CpuStats
-     * @brief Calculated CPU usage percentages
-     */
-    struct CpuStats {
-        double overall_usage_percent{0.0};
-        std::vector<double> per_core_usage;
-    };
+/**
+ * @class ResourceMonitor
+ * @brief Handles real-time monitoring of CPU, RAM, and Disk resource utilization on Linux systems.
+ */
+class ResourceMonitor {
+private:
+    // Stores CPU tick values from previous sampling calculation
+    CpuTicks m_prev_cpu_ticks;
 
-    /**
-     * @struct MemoryStats
-     * @brief Memory allocation details in Megabytes from /proc/meminfo
-     */
-    struct MemoryStats {
-        double total_ram_mb{0.0};
-        double free_ram_mb{0.0};
-        double available_ram_mb{0.0};
-        double used_ram_mb{0.0};
-        double ram_usage_percent{0.0};
-    };
+    // Helper function to read raw ticks from /proc/stat
+    CpuTicks read_proc_stat_ticks();
 
-    /**
-     * @struct DiskStats
-     * @brief Filesystem storage capacity details in Gigabytes from statvfs()
-     */
-    struct DiskStats {
-        double total_disk_gb{0.0};
-        double free_disk_gb{0.0};
-        double used_disk_gb{0.0};
-        double disk_usage_percent{0.0};
-    };
+public:
+    // Constructor initializes baseline CPU ticks
+    ResourceMonitor();
 
-    /**
-     * @class ResourceMonitor
-     * @brief Engine responsible for sampling Linux CPU, Memory, and Disk hardware metrics.
-     */
-    class ResourceMonitor {
-    private:
-        CpuTicks m_prev_cpu_ticks;
-        CpuStats m_current_cpu_stats;
-        MemoryStats m_current_mem_stats;
-        DiskStats m_current_disk_stats;
-        mutable std::mutex m_mutex;
+    // Destructor
+    ~ResourceMonitor() = default;
 
-        CpuTicks read_proc_stat_ticks();
+    // Computes CPU utilization percentage since last call
+    double get_cpu_usage_percent();
 
-    public:
-        ResourceMonitor();
-        ~ResourceMonitor() = default;
+    // Reads /proc/meminfo and calculates RAM usage
+    MemoryInfo get_memory_info();
 
-        /**
-         * @brief Samples all system resources and updates internal metric state.
-         */
-        void update_metrics();
+    // Inspects filesystem capacity using statvfs()
+    DiskInfo get_disk_info(const std::string& mount_point = "/");
+};
 
-        /**
-         * @brief Computes CPU utilization percentage using /proc/stat delta ticks.
-         * @return Calculated CPU usage percentage (0.0% to 100.0%).
-         */
-        double calculate_cpu_usage();
-
-        /**
-         * @brief Parses /proc/meminfo to retrieve RAM metrics.
-         * @return MemoryStats struct populated with RAM values.
-         */
-        MemoryStats get_memory_stats();
-
-        /**
-         * @brief Inspects filesystem utilization via statvfs().
-         * @param mount_point Path to mount point (default "/").
-         * @return DiskStats struct populated with storage values.
-         */
-        DiskStats get_disk_stats(const std::string& mount_point = "/");
-    };
-
-} // namespace Sentinel
-
-#endif // SENTINEL_RESOURCE_MONITOR_H
+#endif // RESOURCE_MONITOR_H
