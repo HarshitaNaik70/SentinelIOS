@@ -8,6 +8,7 @@
 | :--- | :--- |
 | **Project Name** | SentinelOS |
 | **Full Title** | Autonomous Linux Health Monitoring, Process Management & Self-Healing Platform |
+| **Author** | Harshita Naik (B.Tech CSE, SOA University) |
 | **Domain** | Linux System Programming, Linux Kernel Device Drivers, Modern C++ Systems Engineering |
 | **Target OS / Kernel** | Linux Kernel 5.x / 6.x (x86_64 / ARM64) |
 | **Implementation Languages** | C++20 (User-Space Daemon & Client), C11 (Kernel Module & POSIX Syscalls) |
@@ -409,6 +410,6 @@ The virtual character device driver defines custom `ioctl` commands using standa
 
 | Role | Name / Designation | Signature / Approval Status | Date |
 | :--- | :--- | :--- | :--- |
-| **Project Author** | Lead Systems Developer | *Submitted for Review* | September 29, 2026 |
+| **Project Author** | Harshita Naik (B.Tech CSE, SOA University) | *Submitted for Review* | September 29, 2026 |
 | **Faculty Supervisor** | Department of Computer Science & Engineering | *Pending Review* | Stage 1 Verification |
 | **Project Reviewer** | Systems & Embedded Track Evaluator | *Pending Review* | Stage 1 Verification |
