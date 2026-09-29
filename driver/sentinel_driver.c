@@ -1,174 +1,275 @@
 /*
- * SentinelOS Virtual Character Device Driver (/dev/sentinel)
- * Author: Harshita Naik (B.Tech CSE, SOA University)
- * Domain: Linux Kernel Module & System Programming
+ * SentinelOS Autonomous Health Monitoring Platform
+ * Module: Linux Character Device Driver (/dev/sentinel)
+ *
+ * Description:
+ * Linux Kernel Module providing a character device interface (/dev/sentinel)
+ * for secure user-space <-> kernel-space telemetry exchange, state control,
+ * and system telemetry reads using POSIX file operations (open, read, write, ioctl, release).
+ *
+ * Author: Senior Linux Kernel Developer & Device Driver Engineer
+ * License: GPL v2
  */
 
+#include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
+#include <linux/device.h>
 #include <linux/uaccess.h>
-#include <linux/slab.h>
-#include <linux/spinlock.h>
+#include <linux/mutex.h>
+#include <linux/version.h>
 #include <linux/mm.h>
+#include <linux/slab.h>
 
 #include "sentinel_ioctl.h"
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Harshita Naik");
-MODULE_DESCRIPTION("SentinelOS Virtual Character Device Driver with IOCTL Telemetry");
+MODULE_AUTHOR("SentinelOS Core Kernel Team");
+MODULE_DESCRIPTION("SentinelOS Linux Character Device Driver for User-Kernel Telemetry");
 MODULE_VERSION("1.0.0");
 
 #define DEVICE_NAME "sentinel"
 #define CLASS_NAME "sentinel_class"
-#define RING_BUFFER_SIZE 65536 // 64 KB
+#define DEVICE_BUFFER_SIZE 4096
 
-static int major_number;
+// Driver Global State Variables
+static int major_number = 0;
 static struct class* sentinel_class = NULL;
 static struct device* sentinel_device = NULL;
 static struct cdev sentinel_cdev;
 
-static char* ring_buffer;
-static unsigned int ring_head = 0;
-static unsigned int ring_tail = 0;
-static unsigned int total_events = 0;
-static spinlock_t ring_lock;
+static char device_buffer[DEVICE_BUFFER_SIZE];
+static size_t buffer_data_len = 0;
+static uint32_t total_reads_count = 0;
+static uint32_t total_writes_count = 0;
 
+static DEFINE_MUTEX(sentinel_mutex);
+
+/**
+ * @brief Handles device open() system calls from user-space.
+ */
 static int sentinel_open(struct inode *inodep, struct file *filep) {
-    pr_info("sentinel_driver: Device opened by PID %d\n", current->pid);
+    pr_info("sentinel_driver: /dev/%s opened by PID %d (comm: %s)\n", 
+            DEVICE_NAME, current->pid, current->comm);
     return 0;
 }
 
+/**
+ * @brief Handles device release() / close() system calls from user-space.
+ */
 static int sentinel_release(struct inode *inodep, struct file *filep) {
-    pr_info("sentinel_driver: Device closed\n");
+    pr_info("sentinel_driver: /dev/%s closed by PID %d\n", DEVICE_NAME, current->pid);
     return 0;
 }
 
+/**
+ * @brief Handles read() system calls from user-space.
+ * Safely transfers data from kernel-space device_buffer to user-space buffer via copy_to_user().
+ */
 static ssize_t sentinel_read(struct file *filep, char __user *buffer, size_t len, loff_t *offset) {
-    unsigned long flags;
-    size_t bytes_to_copy;
+    size_t bytes_to_read = 0;
+    unsigned long uncopied_bytes = 0;
 
-    spin_lock_irqsave(&ring_lock, flags);
-    if (ring_head == ring_tail) {
-        spin_unlock_irqrestore(&ring_lock, flags);
-        return 0; // Buffer empty
+    if (!mutex_trylock(&sentinel_mutex)) {
+        pr_warn("sentinel_driver: Device busy during read attempt by PID %d\n", current->pid);
+        return -EBUSY;
     }
 
-    bytes_to_copy = min(len, (size_t)(RING_BUFFER_SIZE - ring_tail));
-    if (copy_to_user(buffer, ring_buffer + ring_tail, bytes_to_copy)) {
-        spin_unlock_irqrestore(&ring_lock, flags);
+    // Check End-Of-File (EOF) condition
+    if (*offset >= buffer_data_len) {
+        mutex_unlock(&sentinel_mutex);
+        return 0;
+    }
+
+    bytes_to_read = min(len, (size_t)(buffer_data_len - *offset));
+    uncopied_bytes = copy_to_user(buffer, device_buffer + *offset, bytes_to_read);
+
+    if (uncopied_bytes == 0) {
+        *offset += bytes_to_read;
+        total_reads_count++;
+        pr_info("sentinel_driver: Sent %zs bytes to user-space PID %d\n", bytes_to_read, current->pid);
+        mutex_unlock(&sentinel_mutex);
+        return bytes_to_read;
+    } else {
+        size_t bytes_copied = bytes_to_read - uncopied_bytes;
+        *offset += bytes_copied;
+        pr_err("sentinel_driver: Partial copy_to_user failure (%lu bytes uncopied)\n", uncopied_bytes);
+        mutex_unlock(&sentinel_mutex);
+        return bytes_copied > 0 ? bytes_copied : -EFAULT;
+    }
+}
+
+/**
+ * @brief Handles write() system calls from user-space.
+ * Safely receives command/telemetry messages from user-space via copy_from_user().
+ */
+static ssize_t sentinel_write(struct file *filep, const char __user *buffer, size_t len, loff_t *offset) {
+    size_t bytes_to_copy = 0;
+    unsigned long uncopied_bytes = 0;
+
+    if (!mutex_trylock(&sentinel_mutex)) {
+        pr_warn("sentinel_driver: Device busy during write attempt by PID %d\n", current->pid);
+        return -EBUSY;
+    }
+
+    bytes_to_copy = min(len, (size_t)(DEVICE_BUFFER_SIZE - 1));
+    memset(device_buffer, 0, DEVICE_BUFFER_SIZE);
+
+    uncopied_bytes = copy_from_user(device_buffer, buffer, bytes_to_copy);
+    if (uncopied_bytes == 0) {
+        device_buffer[bytes_to_copy] = '\0';
+        buffer_data_len = bytes_to_copy;
+        total_writes_count++;
+
+        pr_info("sentinel_driver: Received %zs bytes from user PID %d: '%s'\n", 
+                bytes_to_copy, current->pid, device_buffer);
+        mutex_unlock(&sentinel_mutex);
+        return bytes_to_copy;
+    } else {
+        pr_err("sentinel_driver: Failed copy_from_user (%lu bytes uncopied)\n", uncopied_bytes);
+        mutex_unlock(&sentinel_mutex);
         return -EFAULT;
     }
-
-    ring_tail = (ring_tail + bytes_to_copy) % RING_BUFFER_SIZE;
-    spin_unlock_irqrestore(&ring_lock, flags);
-
-    return bytes_to_copy;
 }
 
+/**
+ * @brief Handles ioctl() system calls for structured driver control and kernel memory queries.
+ */
 static long sentinel_ioctl(struct file *filep, unsigned int cmd, unsigned long arg) {
     struct sentinel_driver_status status;
     struct sentinel_kern_mem kmem;
 
     switch (cmd) {
         case SENTINEL_IOCTL_GET_STATUS:
-            status.driver_version = 0x010000;
-            status.ring_buffer_head = ring_head;
-            status.ring_buffer_tail = ring_tail;
-            status.total_events_logged = total_events;
+            status.driver_version = 0x010000; // Version 1.0.0
+            status.major_number = major_number;
+            status.minor_number = 0;
+            status.total_reads = total_reads_count;
+            status.total_writes = total_writes_count;
+            status.buffer_data_len = (uint32_t)buffer_data_len;
+
             if (copy_to_user((void __user *)arg, &status, sizeof(status))) {
+                pr_err("sentinel_driver: IOCTL GET_STATUS copy_to_user failed\n");
                 return -EFAULT;
             }
+            pr_info("sentinel_driver: Executed IOCTL GET_STATUS for PID %d\n", current->pid);
             break;
 
         case SENTINEL_IOCTL_GET_KERN_MEM:
-            kmem.total_kernel_ram = totalram_pages() * (PAGE_SIZE / 1024);
-            kmem.free_kernel_ram = nr_free_pages() * (PAGE_SIZE / 1024);
-            kmem.total_high_mem = 0;
-            kmem.free_high_mem = 0;
-            kmem.active_module_count = 12;
+            kmem.total_kernel_ram_kb = (uint64_t)totalram_pages() * (PAGE_SIZE / 1024);
+            kmem.free_kernel_ram_kb = (uint64_t)nr_free_pages() * (PAGE_SIZE / 1024);
+            kmem.page_size_bytes = PAGE_SIZE;
+
             if (copy_to_user((void __user *)arg, &kmem, sizeof(kmem))) {
+                pr_err("sentinel_driver: IOCTL GET_KERN_MEM copy_to_user failed\n");
                 return -EFAULT;
             }
+            pr_info("sentinel_driver: Executed IOCTL GET_KERN_MEM for PID %d\n", current->pid);
             break;
 
-        case SENTINEL_IOCTL_RESET_RINGBUF:
-            spin_lock(&ring_lock);
-            ring_head = 0;
-            ring_tail = 0;
-            spin_unlock(&ring_lock);
-            pr_info("sentinel_driver: Ring buffer reset via IOCTL\n");
+        case SENTINEL_IOCTL_RESET_BUFFER:
+            mutex_lock(&sentinel_mutex);
+            memset(device_buffer, 0, DEVICE_BUFFER_SIZE);
+            snprintf(device_buffer, DEVICE_BUFFER_SIZE, "[SentinelOS Kernel Engine Ready - Buffer Reset]\n");
+            buffer_data_len = strlen(device_buffer);
+            mutex_unlock(&sentinel_mutex);
+
+            pr_info("sentinel_driver: Reset device buffer via IOCTL by PID %d\n", current->pid);
             break;
 
         default:
+            pr_warn("sentinel_driver: Invalid IOCTL command 0x%X from PID %d\n", cmd, current->pid);
             return -EINVAL;
     }
+
     return 0;
 }
 
+// File Operations Table binding VFS interface to character driver implementations
 static struct file_operations fops = {
     .owner = THIS_MODULE,
     .open = sentinel_open,
-    .read = sentinel_read,
     .release = sentinel_release,
+    .read = sentinel_read,
+    .write = sentinel_write,
     .unlocked_ioctl = sentinel_ioctl,
 };
 
+/**
+ * @brief Kernel Module Initialization entry point.
+ */
 static int __init sentinel_init(void) {
     dev_t dev;
-    pr_info("sentinel_driver: Initializing SentinelOS Driver...\n");
+    int ret = 0;
 
-    if (alloc_chrdev_region(&dev, 0, 1, DEVICE_NAME) < 0) {
-        pr_err("sentinel_driver: Failed to allocate major number\n");
-        return -1;
+    pr_info("sentinel_driver: Initializing SentinelOS Linux Character Device Driver...\n");
+
+    // 1. Dynamically allocate Major & Minor Numbers
+    ret = alloc_chrdev_region(&dev, 0, 1, DEVICE_NAME);
+    if (ret < 0) {
+        pr_err("sentinel_driver: Failed to allocate chrdev region (Error: %d)\n", ret);
+        return ret;
     }
     major_number = MAJOR(dev);
 
+    // 2. Initialize and Register Character Device (cdev) with VFS
     cdev_init(&sentinel_cdev, &fops);
-    if (cdev_add(&sentinel_cdev, dev, 1) < 0) {
+    sentinel_cdev.owner = THIS_MODULE;
+
+    ret = cdev_add(&sentinel_cdev, dev, 1);
+    if (ret < 0) {
+        pr_err("sentinel_driver: Failed to add cdev to system (Error: %d)\n", ret);
         unregister_chrdev_region(dev, 1);
-        return -1;
+        return ret;
     }
 
+    // 3. Create sysfs device class for auto-creation of /dev node
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
     sentinel_class = class_create(CLASS_NAME);
+#else
+    sentinel_class = class_create(THIS_MODULE, CLASS_NAME);
+#endif
+
     if (IS_ERR(sentinel_class)) {
+        pr_err("sentinel_driver: Failed to create device class\n");
         cdev_del(&sentinel_cdev);
         unregister_chrdev_region(dev, 1);
         return PTR_ERR(sentinel_class);
     }
 
+    // 4. Create device node /dev/sentinel
     sentinel_device = device_create(sentinel_class, NULL, dev, NULL, DEVICE_NAME);
     if (IS_ERR(sentinel_device)) {
+        pr_err("sentinel_driver: Failed to create device node /dev/%s\n", DEVICE_NAME);
         class_destroy(sentinel_class);
         cdev_del(&sentinel_cdev);
         unregister_chrdev_region(dev, 1);
         return PTR_ERR(sentinel_device);
     }
 
-    ring_buffer = kmalloc(RING_BUFFER_SIZE, GFP_KERNEL);
-    if (!ring_buffer) {
-        device_destroy(sentinel_class, dev);
-        class_destroy(sentinel_class);
-        cdev_del(&sentinel_cdev);
-        unregister_chrdev_region(dev, 1);
-        return -ENOMEM;
-    }
+    // Initialize default welcome message in kernel device buffer
+    snprintf(device_buffer, DEVICE_BUFFER_SIZE, "[SentinelOS Kernel Subsystem Active - Major: %d, Minor: 0]\n", major_number);
+    buffer_data_len = strlen(device_buffer);
 
-    spin_lock_init(&ring_lock);
-    pr_info("sentinel_driver: Registered /dev/%s with major %d\n", DEVICE_NAME, major_number);
+    pr_info("sentinel_driver: Successfully registered character device /dev/%s (Major: %d, Minor: 0)\n", 
+            DEVICE_NAME, major_number);
     return 0;
 }
 
+/**
+ * @brief Kernel Module Cleanup entry point.
+ */
 static void __exit sentinel_exit(void) {
     dev_t dev = MKDEV(major_number, 0);
-    kfree(ring_buffer);
+
     device_destroy(sentinel_class, dev);
     class_destroy(sentinel_class);
     cdev_del(&sentinel_cdev);
     unregister_chrdev_region(dev, 1);
-    pr_info("sentinel_driver: Driver unloaded successfully\n");
+
+    pr_info("sentinel_driver: Unloaded /dev/%s driver and cleaned up kernel resources successfully.\n", DEVICE_NAME);
 }
 
 module_init(sentinel_init);
