@@ -2,32 +2,29 @@
 #define ALERT_MANAGER_H
 
 #include <string>
-#include <fstream>
-#include <mutex>
+#include <vector>
+#include "ProcessManager.h"
+#include "ResourceMonitor.h"
 
-enum class LogLevel {
-    INFO,
-    WARNING,
-    CRITICAL
-};
-
+/**
+ * @class AlertManager
+ * @brief Evaluates system resource thresholds and process state anomalies to trigger real-time alerts.
+ */
 class AlertManager {
 private:
-    std::string m_log_file_path;
-    std::ofstream m_log_file;
-    std::mutex m_log_mutex;
-
-    std::string level_to_string(LogLevel level);
-    std::string get_current_timestamp();
+    double m_cpu_threshold_percent{90.0};
+    double m_ram_threshold_percent{85.0};
+    double m_disk_threshold_percent{90.0};
 
 public:
-    explicit AlertManager(const std::string& log_file_path = "sentinel.log");
-    ~AlertManager();
+    AlertManager(double cpu_thresh = 90.0, double ram_thresh = 85.0, double disk_thresh = 90.0);
+    ~AlertManager() = default;
 
-    void log(LogLevel level, const std::string& module, const std::string& message);
-    void info(const std::string& module, const std::string& message);
-    void warn(const std::string& module, const std::string& message);
-    void error(const std::string& module, const std::string& message);
+    // Evaluates CPU, RAM, and Disk metrics against configured threshold limits
+    void check_resource_thresholds(double cpu_percent, double ram_percent, double disk_percent);
+
+    // Inspects process list for Zombie ('Z') or Stopped ('T') states
+    void check_process_anomalies(const std::vector<ProcessInfo>& process_list);
 };
 
 #endif // ALERT_MANAGER_H

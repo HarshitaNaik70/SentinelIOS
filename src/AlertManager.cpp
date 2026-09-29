@@ -1,71 +1,43 @@
 #include "AlertManager.h"
+#include "Logger.h"
 #include <iostream>
-#include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <sstream>
 
-AlertManager::AlertManager(const std::string& log_file_path)
-    : m_log_file_path(log_file_path) {
-    m_log_file.open(m_log_file_path, std::ios::app);
-    if (!m_log_file.is_open()) {
-        std::cerr << "[AlertManager] Warning: Could not open log file " << m_log_file_path << std::endl;
+AlertManager::AlertManager(double cpu_thresh, double ram_thresh, double disk_thresh)
+    : m_cpu_threshold_percent(cpu_thresh),
+      m_ram_threshold_percent(ram_thresh),
+      m_disk_threshold_percent(disk_thresh) {}
+
+// Evaluates resource percentages against warning thresholds
+void AlertManager::check_resource_thresholds(double cpu_percent, double ram_percent, double disk_percent) {
+    if (cpu_percent > m_cpu_threshold_percent) {
+        Logger::getInstance().warn("AlertManager", 
+            "High CPU Utilization Warning: " + std::to_string(cpu_percent) + "% (Threshold: " + std::to_string(m_cpu_threshold_percent) + "%)");
+    }
+
+    if (ram_percent > m_ram_threshold_percent) {
+        Logger::getInstance().warn("AlertManager", 
+            "High RAM Usage Warning: " + std::to_string(ram_percent) + "% (Threshold: " + std::to_string(m_ram_threshold_percent) + "%)");
+    }
+
+    if (disk_percent > m_disk_threshold_percent) {
+        Logger::getInstance().warn("AlertManager", 
+            "High Disk Space Warning: " + std::to_string(disk_percent) + "% (Threshold: " + std::to_string(m_disk_threshold_percent) + "%)");
     }
 }
 
-AlertManager::~AlertManager() {
-    if (m_log_file.is_open()) {
-        m_log_file.close();
+// Scans process table for Zombie ('Z') or terminated/stopped processes
+void AlertManager::check_process_anomalies(const std::vector<ProcessInfo>& process_list) {
+    int zombie_count = 0;
+    for (const auto& proc : process_list) {
+        if (proc.state == 'Z') {
+            zombie_count++;
+            Logger::getInstance().error("AlertManager", 
+                "Zombie Process Detected! PID: " + std::to_string(proc.pid) + " | Name: " + proc.name + " | PPID: " + std::to_string(proc.ppid));
+        }
     }
-}
 
-std::string AlertManager::level_to_string(LogLevel level) {
-    switch (level) {
-        case LogLevel::INFO:     return "INFO";
-        case LogLevel::WARNING:  return "WARN";
-        case LogLevel::CRITICAL: return "CRIT";
-        default:                 return "INFO";
+    if (zombie_count > 0) {
+        Logger::getInstance().critical("AlertManager", 
+            "System Process Anomaly: Total " + std::to_string(zombie_count) + " Zombie Process(es) active!");
     }
-}
-
-std::string AlertManager::get_current_timestamp() {
-    auto now = std::chrono::system_clock::now();
-    auto time_t_now = std::chrono::system_clock::to_time_t(now);
-    std::tm tm_now{};
-#if defined(_WIN32) || defined(_WIN64)
-    localtime_s(&tm_now, &time_t_now);
-#else
-    localtime_r(&time_t_now, &tm_now);
-#endif
-    std::ostringstream ss;
-    ss << std::put_time(&tm_now, "%Y-%m-%d %H:%M:%S");
-    return ss.str();
-}
-
-void AlertManager::log(LogLevel level, const std::string& module, const std::string& message) {
-    std::lock_guard<std::mutex> lock(m_log_mutex);
-    std::string timestamp = get_current_timestamp();
-    std::string lvl_str = level_to_string(level);
-
-    std::string log_line = "[" + timestamp + "] [" + lvl_str + "] [" + module + "] " + message;
-
-    // Print to Console
-    std::cout << log_line << std::endl;
-
-    // Write to Log File
-    if (m_log_file.is_open()) {
-        m_log_file << log_line << std::endl;
-    }
-}
-
-void AlertManager::info(const std::string& module, const std::string& message) {
-    log(LogLevel::INFO, module, message);
-}
-
-void AlertManager::warn(const std::string& module, const std::string& message) {
-    log(LogLevel::WARNING, module, message);
-}
-
-void AlertManager::error(const std::string& module, const std::string& message) {
-    log(LogLevel::CRITICAL, module, message);
 }
