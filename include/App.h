@@ -2,6 +2,8 @@
 #define SENTINEL_APP_H
 
 #include "Common.h"
+#include "ResourceMonitor.h"
+#include <memory>
 
 namespace Sentinel {
 
@@ -13,6 +15,7 @@ namespace Sentinel {
     class SentinelApp {
     private:
         bool m_is_running;
+        std::unique_ptr<ResourceMonitor> m_resource_monitor;
 
     public:
         SentinelApp();
