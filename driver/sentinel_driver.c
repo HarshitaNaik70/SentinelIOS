@@ -72,9 +72,8 @@ static ssize_t sentinel_read(struct file *filep, char __user *buffer, size_t len
     size_t bytes_to_read = 0;
     unsigned long uncopied_bytes = 0;
 
-    if (!mutex_trylock(&sentinel_mutex)) {
-        pr_warn("sentinel_driver: Device busy during read attempt by PID %d\n", current->pid);
-        return -EBUSY;
+    if (mutex_lock_interruptible(&sentinel_mutex)) {
+        return -ERESTARTSYS;
     }
 
     // Check End-Of-File (EOF) condition
@@ -109,9 +108,8 @@ static ssize_t sentinel_write(struct file *filep, const char __user *buffer, siz
     size_t bytes_to_copy = 0;
     unsigned long uncopied_bytes = 0;
 
-    if (!mutex_trylock(&sentinel_mutex)) {
-        pr_warn("sentinel_driver: Device busy during write attempt by PID %d\n", current->pid);
-        return -EBUSY;
+    if (mutex_lock_interruptible(&sentinel_mutex)) {
+        return -ERESTARTSYS;
     }
 
     bytes_to_copy = min(len, (size_t)(DEVICE_BUFFER_SIZE - 1));

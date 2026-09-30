@@ -125,6 +125,7 @@ DiskInfo ResourceMonitor::get_disk_info(const std::string& mount_point) {
     }
 #else
     // Simulation values for testing on non-Linux systems
+    (void)mount_point;
     disk.total_disk_gb = 100.0;
     disk.used_disk_gb = 45.0;
     disk.free_disk_gb = 55.0;

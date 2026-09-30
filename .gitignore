@@ -1,32 +1,110 @@
-# Build Artifacts
-build/
-bin/
+# ==============================================================================
+# SentinelOS Repository .gitignore
+# Purpose: Exclude build artifacts, kernel module objects, IDE files, and logs
+# Platform: Linux / Windows (MinGW) / Cross-Compiler
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. C/C++ Binary & Object Artifacts
+# ------------------------------------------------------------------------------
 *.o
+*.obj
+*.out
+*.exe
 *.so
+*.so.*
+*.dylib
 *.a
+*.lib
+
+# User-Space Target Executables
 sentinel_os
 sentinel_client
+sentinel_os.exe
+sentinel_client.exe
 sentinel_prototype
 client_app
-*.exe
+sentinel_test
+sentinel_test_app
 
-# Logs & Temporary Files
-logs/*.log
-*.log
-*.tmp
+# ------------------------------------------------------------------------------
+# 2. Linux Kernel Module (Kbuild) Artifacts
+# ------------------------------------------------------------------------------
+*.ko
+*.mod
+*.mod.c
+*.mod.o
+*.o.cmd
+*.ko.cmd
+Module.symvers
+modules.order
+Module.markers
+.tmp_versions/
+.sentinel*
 
-# Kernel Module Build Files
+# Driver Directory Kbuild Specifics
 driver/*.o
 driver/*.ko
 driver/*.mod
 driver/*.mod.c
+driver/*.mod.o
 driver/*.order
 driver/*.symvers
-driver/.sentinel*
+driver/*.cmd
 driver/.tmp_versions/
+driver/.sentinel*
+driver/sentinel_test_app
+driver/sentinel_test
 
-# IDE & OS Artifacts
-.vscode/
-.idea/
+# ------------------------------------------------------------------------------
+# 3. CMake & System Build Directories
+# ------------------------------------------------------------------------------
+build/
+bin/
+lib/
+cmake-build-debug/
+cmake-build-release/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.cmake
+install_manifest.txt
+
+# ------------------------------------------------------------------------------
+# 4. Logs & Runtime Telemetry Output
+# ------------------------------------------------------------------------------
+*.log
+logs/*
+!logs/.gitkeep
+
+# ------------------------------------------------------------------------------
+# 5. Temporary & Backup Files
+# ------------------------------------------------------------------------------
+*.tmp
+*.swp
+*.swo
+*~
+*.bak
+*.sav
 .DS_Store
 Thumbs.db
+
+# ------------------------------------------------------------------------------
+# 6. IDE & Editor Project Files
+# ------------------------------------------------------------------------------
+.vscode/
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.user
+*.suo
+*.userosv
+*.sln
+*.vcproj
+*.vcxproj
+*.vcxproj.filters
+*.ncb
+*.sdf
+*.opensdf
+.clangd/
+.cache/

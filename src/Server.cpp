@@ -1,5 +1,4 @@
 #include "Server.h"
-#include "Logger.h"
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -7,9 +6,14 @@
 #include <iomanip>
 
 #if defined(_WIN32) || defined(_WIN64)
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#if defined(_MSC_VER)
 #pragma comment(lib, "ws2_32.lib")
+#endif
 typedef int socklen_t;
 #else
 #include <sys/socket.h>
@@ -38,7 +42,7 @@ bool Server::start() {
     // 1. Create IPv4 TCP Stream Socket
     m_server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (m_server_fd < 0) {
-        Logger::getInstance().error("Server", "Failed to create TCP socket.");
+        std::cerr << "[Server] Error: Failed to create TCP socket." << std::endl;
         return false;
     }
 
@@ -57,7 +61,7 @@ bool Server::start() {
     server_addr.sin_port = htons(m_port);
 
     if (bind(m_server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        Logger::getInstance().error("Server", "Failed to bind TCP socket to port " + std::to_string(m_port));
+        std::cerr << "[Server] Error: Failed to bind TCP socket to port " << m_port << std::endl;
 #if defined(_WIN32) || defined(_WIN64)
         closesocket(m_server_fd);
 #else
@@ -68,12 +72,12 @@ bool Server::start() {
 
     // 4. Listen for incoming client connections (Backlog queue: 5)
     if (listen(m_server_fd, 5) < 0) {
-        Logger::getInstance().error("Server", "Failed to listen on TCP socket.");
+        std::cerr << "[Server] Error: Failed to listen on TCP socket." << std::endl;
         return false;
     }
 
     m_is_running.store(true);
-    Logger::getInstance().info("Server", "TCP Server listening on IPv4 0.0.0.0:" + std::to_string(m_port));
+    std::cout << "[Server] TCP Server listening on IPv4 0.0.0.0:" << m_port << std::endl;
 
     // 5. Launch background thread to handle incoming accept() connections
     m_accept_thread = std::thread(&Server::accept_loop, this);
@@ -93,7 +97,7 @@ void Server::accept_loop() {
         }
 
         std::string client_ip = inet_ntoa(client_addr.sin_addr);
-        Logger::getInstance().info("Server", "Client connected from " + client_ip + ":" + std::to_string(ntohs(client_addr.sin_port)));
+        std::cout << "[Server] Client connected from " << client_ip << ":" << ntohs(client_addr.sin_port) << std::endl;
 
         // Spawn a detached worker thread for each connected client
         std::thread client_thread(&Server::handle_client, this, client_fd, client_ip);
@@ -109,7 +113,7 @@ void Server::handle_client(int client_fd, std::string client_ip) {
         int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 
         if (bytes_received <= 0) {
-            Logger::getInstance().info("Server", "Client disconnected from " + client_ip);
+            std::cout << "[Server] Client disconnected from " << client_ip << std::endl;
             break;
         }
 
@@ -119,7 +123,7 @@ void Server::handle_client(int client_fd, std::string client_ip) {
 
         if (raw_command.empty()) continue;
 
-        Logger::getInstance().info("Server", "[" + client_ip + "] Command Received: " + raw_command);
+        std::cout << "[Server] [" << client_ip << "] Command Received: " << raw_command << std::endl;
 
         std::string response = process_command(raw_command);
         send(client_fd, response.c_str(), static_cast<int>(response.length()), 0);
@@ -195,7 +199,7 @@ void Server::stop() {
         return;
     }
 
-    Logger::getInstance().info("Server", "Stopping TCP Server...");
+    std::cout << "[Server] Stopping TCP Server..." << std::endl;
 
 #if defined(_WIN32) || defined(_WIN64)
     if (m_server_fd >= 0) closesocket(m_server_fd);
@@ -210,5 +214,5 @@ void Server::stop() {
         m_accept_thread.join();
     }
 
-    Logger::getInstance().info("Server", "TCP Server stopped.");
+    std::cout << "[Server] TCP Server stopped." << std::endl;
 }

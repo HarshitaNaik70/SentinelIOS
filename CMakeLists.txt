@@ -4,11 +4,31 @@ project(SentinelOS VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include client)
+include_directories(include client driver)
 
-# 1. Server Daemon Target
-file(GLOB SERVER_SOURCES "src/*.cpp")
-add_executable(sentinel_os ${SERVER_SOURCES})
+find_package(Threads REQUIRED)
 
-# 2. Client Application Target
-add_executable(sentinel_client client/Client.cpp client/client_main.cpp src/Logger.cpp)
+# 1. Server Daemon Executable Target
+add_executable(sentinel_os
+    src/Server.cpp
+    src/ProcessManager.cpp
+    src/KernelMonitor.cpp
+    src/ResourceMonitor.cpp
+    src/main.cpp
+)
+
+target_link_libraries(sentinel_os PRIVATE Threads::Threads)
+if(WIN32)
+    target_link_libraries(sentinel_os PRIVATE ws2_32)
+endif()
+
+# 2. Client Application Executable Target
+add_executable(sentinel_client
+    client/Client.cpp
+    client/client_main.cpp
+)
+
+target_link_libraries(sentinel_client PRIVATE Threads::Threads)
+if(WIN32)
+    target_link_libraries(sentinel_client PRIVATE ws2_32)
+endif()
