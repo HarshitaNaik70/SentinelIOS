@@ -475,6 +475,18 @@ Examples:
 - docs(stage2): complete Stage 2 SRS and PRD specifications
 ```
 
+### 12.3 Scope Reduction & Architectural Trade-off Audit
+
+During Stage 2 feasibility analysis, the platform architecture underwent a deliberate scope reduction audit to ensure high reliability, zero system destabilization, and full portability across native Linux and virtualized environments (e.g., WSL2):
+
+1. **Kernel Driver Pivot (eBPF/Kprobes to LKM Character Device)**:
+   - *Rationale*: Initial eBPF/Kprobes design introduced heavy kernel version dependencies and required root BPF JIT permissions unsupported in non-custom WSL2 kernels.
+   - *Trade-off*: Pivoted to a standard Linux Kernel Module (LKM) character device driver (`/dev/sentinel`) with standard `ioctl` IPC, ensuring deterministic portability across standard Linux kernels.
+
+2. **Dual-Mode Telemetry Architecture (LKM + POSIX Fallback)**:
+   - *Rationale*: WSL2 and stripped cloud kernels lack modular device driver loading support by default.
+   - *Solution*: Embedded a user-space POSIX filesystem telemetry parser (`/proc/stat`, `/proc/meminfo`, `/proc/diskstats`) as an active fallback when `/dev/sentinel` is unavailable.
+
 ---
 
 ## 13. Verification & Approval Sign-off

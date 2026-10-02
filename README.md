@@ -141,40 +141,36 @@ SentinelOS aims to provide a unified monitoring and self-healing solution that a
 
 ```text
 SentinelOS/
-│
-├── docs/
-│   └── Stage1_Documentation.md
-│
+├── CMakeLists.txt
+├── README.md
+├── .gitignore
+├── include/
+│   ├── AlertManager.h
+│   ├── KernelMonitor.h
+│   ├── ProcessManager.h
+│   ├── RecoveryManager.h
+│   ├── ResourceMonitor.h
+│   └── Server.h
 ├── src/
-│   ├── ResourceMonitor.cpp
-│   ├── ProcessManager.cpp
-│   ├── KernelMonitor.cpp
 │   ├── AlertManager.cpp
+│   ├── KernelMonitor.cpp
+│   ├── ProcessManager.cpp
 │   ├── RecoveryManager.cpp
+│   ├── ResourceMonitor.cpp
 │   ├── Server.cpp
 │   └── main.cpp
-│
-├── include/
-│   ├── ResourceMonitor.h
-│   ├── ProcessManager.h
-│   ├── KernelMonitor.h
-│   ├── AlertManager.h
-│   ├── RecoveryManager.h
-│   └── Server.h
-│
 ├── client/
 │   └── Client.cpp
-│
 ├── driver/
-│   ├── sentinel_driver.c
-│   └── Makefile
-│
-├── tests/
-│
-├── logs/
-│
-├── README.md
-└── .gitignore
+│   ├── Makefile
+│   └── sentinel_driver.c
+└── docs/
+    ├── Stage1_Project_Introduction.pdf
+    ├── Stage2_Requirements_and_Design.pdf
+    ├── Stage3_Implementation.pdf
+    ├── Stage4_Testing.pdf
+    ├── Stage5_Results.pdf
+    └── Stage6_Final_Report.pdf
 ```
 
 ---

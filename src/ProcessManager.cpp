@@ -4,8 +4,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iomanip>
-
-#if defined(__linux__)
+#if defined(__linux__) || defined(__gnu_linux__) || defined(__unix__)
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>

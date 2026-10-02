@@ -3,8 +3,8 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-
-#if defined(__linux__)
+#include <cstdint>
+#if defined(__linux__) || defined(__gnu_linux__) || defined(__unix__)
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -142,6 +142,11 @@ MemorySwapInfo KernelMonitor::get_memory_swap_info() {
     mem.available_ram_mb = static_cast<double>(avail_ram_kb) / 1024.0;
     mem.total_swap_mb = static_cast<double>(total_swap_kb) / 1024.0;
     mem.free_swap_mb = static_cast<double>(free_swap_kb) / 1024.0;
+
+    std::cout << "DEBUG Total RAM KB = " << total_ram_kb << std::endl;
+std::cout << "DEBUG Available RAM KB = " << avail_ram_kb << std::endl;
+std::cout << "DEBUG Total Swap KB = " << total_swap_kb << std::endl;
+std::cout << "DEBUG Free Swap KB = " << free_swap_kb << std::endl;
 
     return mem;
 }

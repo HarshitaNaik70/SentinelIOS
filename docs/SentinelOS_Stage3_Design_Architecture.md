@@ -78,6 +78,24 @@ SentinelOS adopts a multi-tiered, hybrid architecture bridging Linux Kernel Spac
 +---------------------------------------------------------------------------------------------------+
 ```
 
+### 1.1 Simplified Subsystem Overview for Presentation & Viva
+
+For high-level project walkthroughs and Viva defense, the platform is summarized into 3 primary functional tiers:
+
+1. **User-Space Monitoring Daemon (`sentinel_os`)**:
+   - Compiles with modern C++20 (`-std=c++20`).
+   - Reads system telemetry from POSIX `/proc` files (`/proc/stat`, `/proc/meminfo`, `/proc/uptime`).
+   - Manages child processes, traps unexpected exits via `waitpid()`, and re-spawns failed daemons.
+
+2. **Linux Character Device Driver (`/dev/sentinel`)**:
+   - Written in C11 (`sentinel_driver.c`).
+   - Registers character device node `/dev/sentinel` using `alloc_chrdev_region()` and `cdev_add()`.
+   - Handles binary control requests via `ioctl()` and safely transfers data using `copy_to_user()`.
+
+3. **Remote CLI Monitoring Client (`sentinel_client`)**:
+   - C++ terminal client connecting to `sentinel_os` via TCP Socket (port 9090).
+   - Issues query requests (`GET_CPU`, `GET_MEMORY`, `GET_PROCESSES`) and displays live system metrics.
+
 ---
 
 ## 2. Component Architecture

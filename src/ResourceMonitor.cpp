@@ -2,8 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-
-#if defined(__linux__)
+#if defined(__linux__) || defined(__gnu_linux__) || defined(__unix__)
 #include <sys/statvfs.h>
 #endif
 

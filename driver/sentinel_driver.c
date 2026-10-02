@@ -22,6 +22,7 @@
 #include <linux/version.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
+#include <linux/swap.h>
 
 #include "sentinel_ioctl.h"
 
@@ -88,7 +89,7 @@ static ssize_t sentinel_read(struct file *filep, char __user *buffer, size_t len
     if (uncopied_bytes == 0) {
         *offset += bytes_to_read;
         total_reads_count++;
-        pr_info("sentinel_driver: Sent %zs bytes to user-space PID %d\n", bytes_to_read, current->pid);
+        pr_info("sentinel_driver: Sent %zu bytes to user-space PID %d\n", bytes_to_read, current->pid);
         mutex_unlock(&sentinel_mutex);
         return bytes_to_read;
     } else {
@@ -121,7 +122,7 @@ static ssize_t sentinel_write(struct file *filep, const char __user *buffer, siz
         buffer_data_len = bytes_to_copy;
         total_writes_count++;
 
-        pr_info("sentinel_driver: Received %zs bytes from user PID %d: '%s'\n", 
+        pr_info("sentinel_driver: Received %zu bytes from user PID %d: '%s'\n", 
                 bytes_to_copy, current->pid, device_buffer);
         mutex_unlock(&sentinel_mutex);
         return bytes_to_copy;

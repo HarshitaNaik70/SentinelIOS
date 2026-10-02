@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 // Struct holding Kernel Version & Distro Information
 struct KernelVersionInfo {

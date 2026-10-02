@@ -274,6 +274,39 @@ $$\text{CPU Usage \%} = \left(1.0 - \frac{\Delta \text{idle}}{\Delta \text{total
 ### Q5: How is thread safety ensured inside the C++ daemon?
 **Answer**: Shared state structures across monitoring threads are synchronized using C++ RAII lock handles (`std::lock_guard<std::mutex>`, `std::scoped_lock`). Re-entrant signal handlers avoid non-recursive mutex locks by using atomic flags (`std::atomic<bool>`).
 
+### Q6: What is an IOCTL and why is it used in SentinelOS?
+**Answer**: `ioctl()` (Input/Output Control) allows user-space applications to issue structured control commands and query binary telemetry structures from device drivers that don't fit standard stream `read()` or `write()` calls. SentinelOS uses IOCTLs to query driver version, read counter statistics (`SENTINEL_IOCTL_GET_STATUS`), and inspect kernel RAM usage (`SENTINEL_IOCTL_GET_KERN_MEM`).
+
+### Q7: Why did you use `mutex_lock_interruptible()` instead of `mutex_trylock()` in the character driver?
+**Answer**: `mutex_trylock()` fails immediately with `-EBUSY` if another process holds the driver lock. `mutex_lock_interruptible()` puts the calling process to sleep cleanly until the lock becomes available, while allowing OS signal interruptions (returning `-ERESTARTSYS`).
+
+### Q8: How does `RecoveryManager` detect a process failure?
+**Answer**: `RecoveryManager` executes non-blocking `waitpid(proc.pid, &wstatus, WNOHANG)`. If `waitpid()` returns the child PID, it checks `WIFEXITED(wstatus)` or `WIFSIGNALED(wstatus)` to determine if the process exited unexpectedly or was killed by a signal (e.g., `SIGSEGV`, `SIGKILL`). It also uses `kill(pid, 0)` to verify process existence.
+
+### Q9: How does process spawning work in `RecoveryManager::spawn_process()`?
+**Answer**: It uses POSIX `fork()` to create a child process duplicate. The child process calls `execvp(binary_path, argv)` to replace its image with the target executable. The parent process receives the child PID from `fork()` and stores it in the supervision table.
+
+### Q10: What is a Zombie process and how does SentinelOS prevent zombie leaks?
+**Answer**: A Zombie process (`'Z'`) is a terminated process whose entry remains in the kernel process table because its parent has not read its exit code via `wait()` / `waitpid()`. `RecoveryManager` invokes `waitpid(..., WNOHANG)` during health checks to reap terminated children and prevent table saturation.
+
+### Q11: How is thread safety enforced across SentinelOS C++ components?
+**Answer**: `Logger` uses `std::mutex` with `std::lock_guard` to synchronize concurrent log writes. `RecoveryManager` uses `m_mutex` to protect the `unordered_map` supervision registry. `Server` uses `m_monitor_mutex` when retrieving telemetry for client connections.
+
+### Q12: Explain the purpose of `SO_REUSEADDR` in `Server.cpp`.
+**Answer**: When a server socket closes, it enters a `TIME_WAIT` state. Setting `SO_REUSEADDR` via `setsockopt()` allows the server to immediately rebind to TCP port 9090 upon restart without raising an "Address already in use" (`EADDRINUSE`) error.
+
+### Q13: How does the client-server protocol work in SentinelOS?
+**Answer**: The client opens an IPv4 TCP stream socket to port 9090 and sends plaintext ASCII command strings (`GET_CPU`, `GET_MEMORY`, `GET_DISK`, `GET_KERNEL`, `GET_PROCESSES`, `GET_SYSTEM_STATUS`). The multithreaded server processes the string under lock and returns a formatted key-value response stream.
+
+### Q14: How does SentinelOS handle recovery policy retries?
+**Answer**: Each monitored process has a `max_retries` counter and policy (`IMMEDIATE` or `DELAYED`). If retries are below threshold, it increments `retry_count` and restarts the binary (pausing for `cooldown_seconds` under `DELAYED`). If retries equal `max_retries`, it transitions the status to `FAILED_PERMANENT` and issues a `CRITICAL` alert.
+
+### Q15: Why is `ThreadCompat.h` included in the project?
+**Answer**: Standard C++ `<thread>` and `<mutex>` implementations vary across GCC, Clang, and MinGW compilers on Windows/Linux. `ThreadCompat.h` provides cross-platform abstractions so the project compiles seamlessly across Native Linux GCC and Windows MinGW toolchains.
+
+### Q16: How does SentinelOS handle WSL2 Linux Environment Kernel Driver Limitations during Viva Defense?
+**Answer**: WSL2 runs a stripped Microsoft Linux kernel without pre-built `build` symlinks or kernel loadable module support by default. SentinelOS handles this by providing a dual architecture: an in-kernel LKM driver for native Linux kernel environments, and a transparent fallback daemon using POSIX `/proc` system calls for WSL2 environments, ensuring full functionality regardless of host hypervisor constraints.
+
 ---
 
 ## 13. Project Presentation Slides Content

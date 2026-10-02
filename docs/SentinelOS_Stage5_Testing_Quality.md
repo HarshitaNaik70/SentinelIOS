@@ -127,6 +127,20 @@ The following test suite provides exhaustive test cases across all SentinelOS mo
 | **TC-NET-01** | `Server` | Accept remote CLI connection over TCP port 9090. | Client connects to `127.0.0.1:9090`. | TCP socket connection accepted; non-blocking handshake complete. | Socket connected. | **P1 (Must)** |
 | **TC-LOG-01** | `AlertManager` | Multi-sink output to file and syslog. | Call `log(LogLevel::WARNING, "Test", "Sample Warn")`. | Message written to console, `sentinel.log`, and `syslog`. | Log entry present in file. | **P1 (Must)** |
 
+### 4.1 Defect Logging & QA Traceability Standard
+
+During QA execution, any failing test case must be recorded using the following standardized Defect Template:
+
+```markdown
+Defect ID: DEF-HEAL-01
+Severity: CRITICAL / MAJOR / MINOR
+Module: RecoveryManager / KernelDriver / Server / ResourceMonitor
+Summary: Brief description of defect behavior
+Steps to Reproduce: 1. Launch daemon -> 2. Inject fault -> 3. Observe crash
+Expected vs Actual Result: Detailed output comparison
+Fix Confirmation: Verified by re-execution of unit test suite
+```
+
 ---
 
 ## 5. Test Results Template

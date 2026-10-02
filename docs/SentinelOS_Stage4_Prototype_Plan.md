@@ -752,6 +752,35 @@ clean:
 .PHONY: all clean
 ```
 
+### 9.3 WSL2 Kernel Driver Build Automation Script (`SentinelOS_WSL2_Driver_Build_Script.sh`)
+
+When compiling the SentinelOS Linux Kernel Module driver on WSL2, execute the following script:
+
+```bash
+#!/bin/bash
+# SentinelOS WSL2 Kernel Driver Build & Registration Helper
+
+echo "[+] Setting up Linux Kernel Driver Environment for WSL2..."
+sudo apt-get update && sudo apt-get install -build-essential linux-headers-$(uname -r) -y
+
+echo "[+] Compiling SentinelOS Character Driver..."
+cd ../driver && make clean && make
+
+echo "[+] Creating Device Node /dev/sentinel..."
+sudo mknod /dev/sentinel c 240 0
+sudo chmod 666 /dev/sentinel
+
+echo "[+] Loading Kernel Module..."
+sudo insmod sentinel_driver.ko
+dmesg | tail -n 10
+```
+
+### 9.4 WSL2 & Native Linux Migration Guide
+
+1. **WSL2 Prerequisites**: Install kernel headers using `sudo apt install linux-headers-$(uname -r) build-essential`.
+2. **Native Linux Deployment**: On standard Ubuntu/Debian Linux, `make` cleanly compiles both user-space daemons (`sentinel_os`, `sentinel_client`) and the kernel module (`sentinel_driver.ko`).
+3. **Execution Verification**: Verify `/dev/sentinel` node instantiation using `ls -l /dev/sentinel` and run `./driver/sentinel_test_app`.
+
 ---
 
 ## 10. Verification & Approval Sign-off
