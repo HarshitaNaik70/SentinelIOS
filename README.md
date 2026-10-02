@@ -221,14 +221,63 @@ SentinelOS/
 
 ---
 
-## Expected Outcomes
+# Expected Output
 
-- Real-time Linux system monitoring
-- Automated process recovery
-- Linux kernel information analysis
-- Character device driver implementation
-- Client-server monitoring architecture
-- Practical understanding of Linux System Programming and Device Drivers
+The following screenshots demonstrate successful execution of SentinelOS.
+
+## 1. Server Startup & Connection
+
+### System Summary
+![System Summary](docs/screenshots/system_summary.png)
+
+### Server Running
+![Server Running](docs/screenshots/server_running.png)
+
+### Client Connected
+![Client Connected](docs/screenshots/client_connected.png)
+
+---
+
+## 2. Client Dashboard
+
+### Dashboard Menu
+![Dashboard Menu](docs/screenshots/menu_dashboard.png)
+
+---
+
+## 3. Monitoring Features
+
+### CPU Usage
+![CPU Usage](docs/screenshots/cpu_usage.png)
+
+### Memory Usage
+![Memory Usage](docs/screenshots/memory_usage.png)
+
+### Disk Usage
+![Disk Usage](docs/screenshots/disk_usage.png)
+
+### Kernel Information
+![Kernel Information](docs/screenshots/kernel_information.png)
+
+### Process Information
+![Process Information](docs/screenshots/process_information.png)
+
+### System Status
+![System Status](docs/screenshots/system_status.png)
+
+---
+
+## 4. Driver Build Verification
+
+### Driver Build Success
+![Driver Build Success](docs/screenshots/driver_build_success.png)
+
+---
+
+## 5. Program Exit
+
+### Client Exit
+![Client Exit](docs/screenshots/exit.png)
 
 ---
 
