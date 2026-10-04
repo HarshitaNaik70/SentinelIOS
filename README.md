@@ -281,6 +281,26 @@ The following screenshots demonstrate successful execution of SentinelOS.
 
 ---
 
+# 17. Conclusion
+
+SentinelOS is a Linux System Monitoring and Telemetry Platform developed using C++, Linux System Programming, TCP Socket Programming, and a Linux Character Device Driver. The platform continuously monitors system resource metrics including CPU, memory, disk, kernel, and process information. By supporting client-server communication, SentinelOS enables real-time telemetry and practical demonstration of key Linux system programming concepts, process management, and custom character device driver interactions.
+
+---
+
+# 18. Quick Start
+
+```bash
+git clone <repository_url>
+cd SentinelOS
+
+make clean
+make
+
+./sentinel_os
+```
+
+---
+
 ## Future Enhancements
 
 - Web Dashboard
@@ -303,3 +323,4 @@ SOA University
 ## License
 
 This project is developed for educational and academic purposes.
+
