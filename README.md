@@ -8,7 +8,7 @@ This project is designed as an educational and practical implementation of Linux
 
 ---
 
-## Problem Statement
+## 1. Problem Statement
 
 Linux systems are widely used in embedded devices, servers, IoT gateways, and industrial systems. However, administrators often rely on multiple tools to monitor system health and manually recover failed services.
 
@@ -24,7 +24,7 @@ SentinelOS aims to provide a unified monitoring and self-healing solution that a
 
 ---
 
-## Objectives
+## 2. Objectives
 
 - Monitor CPU, memory, disk, and network utilization
 - Monitor and manage Linux processes
@@ -36,7 +36,7 @@ SentinelOS aims to provide a unified monitoring and self-healing solution that a
 
 ---
 
-## Key Features
+## 3. Key Features
 
 ### System Resource Monitoring
 - CPU Usage Monitoring
@@ -77,7 +77,7 @@ SentinelOS aims to provide a unified monitoring and self-healing solution that a
 
 ---
 
-## System Architecture
+## 4. System Architecture
 
 ```text
 +-----------------------------------+
@@ -105,7 +105,7 @@ SentinelOS aims to provide a unified monitoring and self-healing solution that a
 
 ---
 
-## Technology Stack
+## 5. Technology Stack
 
 ### Programming Language
 - C++
@@ -137,7 +137,7 @@ SentinelOS aims to provide a unified monitoring and self-healing solution that a
 
 ---
 
-## Project Structure
+## 6. Project Structure
 
 ```text
 SentinelOS/
@@ -175,7 +175,7 @@ SentinelOS/
 
 ---
 
-## Applications
+## 7. Applications
 
 - Embedded Linux Systems
 - Industrial Automation Systems
@@ -186,7 +186,7 @@ SentinelOS/
 
 ---
 
-## Development Roadmap
+## 8. Development Roadmap
 
 ### Stage 1
 - Project Introduction
@@ -221,11 +221,11 @@ SentinelOS/
 
 ---
 
-# Expected Output
+# 9. Expected Output
 
 The following screenshots demonstrate successful execution of SentinelOS.
 
-## 1. Server Startup & Connection
+## Server Startup & Connection
 
 ### System Summary
 ![System Summary](docs/screenshots/system_summary.png)
@@ -238,14 +238,14 @@ The following screenshots demonstrate successful execution of SentinelOS.
 
 ---
 
-## 2. Client Dashboard
+## Client Dashboard
 
 ### Dashboard Menu
 ![Dashboard Menu](docs/screenshots/menu_dashboard.png)
 
 ---
 
-## 3. Monitoring Features
+## Monitoring Features
 
 ### CPU Usage
 ![CPU Usage](docs/screenshots/cpu_usage.png)
@@ -267,27 +267,20 @@ The following screenshots demonstrate successful execution of SentinelOS.
 
 ---
 
-## 4. Driver Build Verification
+## Driver Build Verification
 
 ### Driver Build Success
 ![Driver Build Success](docs/screenshots/driver_build_success.png)
 
 ---
 
-## 5. Program Exit
+## Program Exit
 
 ### Client Exit
 ![Client Exit](docs/screenshots/exit.png)
 
 ---
-
-# 17. Conclusion
-
-SentinelOS is a Linux System Monitoring and Telemetry Platform developed using C++, Linux System Programming, TCP Socket Programming, and a Linux Character Device Driver. The platform continuously monitors system resource metrics including CPU, memory, disk, kernel, and process information. By supporting client-server communication, SentinelOS enables real-time telemetry and practical demonstration of key Linux system programming concepts, process management, and custom character device driver interactions.
-
----
-
-# 18. Quick Start
+# 10. Quick Start
 
 ```bash
 git clone <repository_url>
@@ -298,10 +291,7 @@ make
 
 ./sentinel_os
 ```
-
----
-
-## Future Enhancements
+## 11. Future Enhancements
 
 - Web Dashboard
 - Machine Learning-Based Failure Prediction
@@ -312,7 +302,15 @@ make
 
 ---
 
-## Author
+# 12. Conclusion
+
+SentinelOS is a Linux System Monitoring and Telemetry Platform developed using C++, Linux System Programming, TCP Socket Programming, and a Linux Character Device Driver. The platform continuously monitors system resource metrics including CPU, memory, disk, kernel, and process information. By supporting client-server communication, SentinelOS enables real-time telemetry and practical demonstration of key Linux system programming concepts, process management, and custom character device driver interactions.
+
+---
+
+---
+
+## 13. Author
 
 **Harshita Naik**  
 B.Tech Computer Science & Engineering  
@@ -320,7 +318,7 @@ SOA University
 
 ---
 
-## License
+## 14. License
 
 This project is developed for educational and academic purposes.
 
